@@ -102,7 +102,7 @@ test that pins it is the useful part:
   It is created `0700` and `.gitignore` excludes it, and there is no encryption.
 - The store is in the same directory on the same disk. This is an undo, not a
   backup.
-- 106 tests, typecheck clean, CI on Node 20/22/24 plus an `installable` job that
+- 105 tests, typecheck clean, CI on Node 20/22/24 plus an `installable` job that
   packs the tarball, installs it into a real consumer `node_modules` and restores
   a file with the installed bin. Two more jobs assert that `src/` imports no
   network module and that `package.json` defines no lifecycle script.

@@ -287,7 +287,7 @@ install-time scripts, and the published `bin` actually runs when installed —
 CI asserts that by packing the tarball and running it from a real `node_modules`.
 
 ```bash
-npm test            # 103 tests
+npm test            # 105 tests
 npm run typecheck   # tsc --noEmit over the JSDoc types
 npm run check       # both
 ./examples/demo.sh  # end to end, asserting every exit code

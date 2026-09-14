@@ -15,9 +15,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "typecheck": "tsc --noEmit",
-    "check": "node --test && tsc --noEmit",
+    "check": "node --test test/*.test.js && tsc --noEmit",
     "rewind": "node src/cli.js"
   },
   "files": [
