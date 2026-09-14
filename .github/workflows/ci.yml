@@ -1,0 +1,134 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor is Node 20. The sources are plain JavaScript, so there is no
+        # build step and nothing needs a newer runtime.
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dev dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  installable:
+    name: the published bin actually runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Regression guard. A `bin` pointing at a .ts file works from a checkout
+      # and fails the moment the package lands in node_modules, because Node
+      # refuses to type-strip there. Installing the packed tarball is the only
+      # test that reproduces that.
+      - name: Install the tarball into a real node_modules
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP" >/dev/null
+          mkdir -p "$RUNNER_TEMP/consumer"
+          cd "$RUNNER_TEMP/consumer"
+          npm init -y >/dev/null
+          npm install "$RUNNER_TEMP"/dsh-rewind-*.tgz --no-audit --no-fund >/dev/null
+
+      - name: The bin resolves inside node_modules and works
+        run: |
+          cd "$RUNNER_TEMP/consumer"
+          resolved="$(realpath node_modules/dsh-rewind/src/cli.js)"
+          case "$resolved" in
+            */node_modules/dsh-rewind/*) echo "resolved: $resolved" ;;
+            *) echo "expected a real copy inside node_modules, got $resolved"; exit 1 ;;
+          esac
+          ./node_modules/.bin/rewind --version
+          mkdir -p tree && cd tree
+          printf 'hello\n' > a.txt
+          ../node_modules/.bin/rewind snap >/dev/null
+          printf 'goodbye\n' > a.txt
+          ../node_modules/.bin/rewind undo last --yes >/dev/null
+          [ "$(cat a.txt)" = "hello" ] || { echo "the installed bin did not restore the file"; exit 1; }
+
+  safety:
+    name: safety invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # These properties are the reason the tool is safe to reach for while
+      # something is going wrong, so they are asserted on their own rather than
+      # buried in the suite.
+      - name: Nothing is destroyed by an undo
+        run: node --test test/safety.test.js test/undo.test.js
+
+  demo:
+    name: demo (end to end, exit codes included)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Break a directory and put it back
+        run: ./examples/demo.sh
+
+  no-network:
+    name: the tool makes no network calls
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # `rewind` is a local file tool. Reading the source is the check: if a
+      # network module ever appears in src/, this job fails and someone has to
+      # justify it. A backup tool that phones home is a different product.
+      - name: No network imports in src/
+        run: |
+          if grep -rnE "from \"node:(http|https|net|dns|tls|dgram)\"|require\(\"node:(http|https|net|dns|tls|dgram)\"\)|fetch\(" src/; then
+            echo "src/ must not touch the network"
+            exit 1
+          fi
+          echo "src/ is offline."
+
+      - name: No install-time scripts
+        run: |
+          node -e '
+            const pkg = require("./package.json");
+            for (const key of ["preinstall", "install", "postinstall", "prepare"]) {
+              if (pkg.scripts && pkg.scripts[key]) {
+                console.error(`package.json defines a ${key} script; installing this package must not run code`);
+                process.exit(1);
+              }
+            }
+            console.log("no lifecycle scripts.");
+          '

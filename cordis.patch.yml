@@ -1,0 +1,41 @@
+# This bundle inserts nothing, deliberately.
+#
+# The plugin's payload is a skill (`skills/rewind/`) plus a CLI that the skill
+# invokes through the normal, visible shell tool. Nothing here runs inside the
+# DSH process.
+#
+# Why: a boot-time `insert` runs code in the DSH process, for every profile, with
+# your full privileges. A tool whose entire job is to make an agent's side
+# effects reversible should not itself be an irreversible new side effect in the
+# boot graph — and a bad insert takes down the boot layer, which is precisely the
+# kind of change you would want to rewind.
+#
+# The CLI needs no privileges beyond the filesystem it is already pointed at: it
+# reads the directory, writes into its own `.rewind/` store, and — only for
+# `undo`, and only for paths it captured — writes files back. Every one of those
+# actions is visible as an ordinary shell command that you can read and approve.
+#
+# So this file is present, valid, and inert: it declares the patch path the
+# bundle format expects, and adds nothing to the composed tree.
+#
+# If you are reviewing this plugin before installing it, the complete execution
+# surface is: this file (empty), package.json (no lifecycle scripts), the CLI
+# source in src/, and the SKILL.md prose. The properties worth checking are the
+# ones the tests assert:
+#
+#   * `undo` never removes a directory recursively — it removes exactly the
+#     files it captured, then removes a directory only if it is empty. A
+#     `node_modules/` inside a deleted tree survives.
+#   * `undo` refuses, changing nothing, unless `--yes` is passed.
+#   * `undo` refuses, changing nothing, to delete a file whose contents were
+#     never captured (too large, unreadable).
+#   * `undo` snapshots the current state before it touches anything, so the undo
+#     is itself undoable.
+#   * No path outside the root is ever read from or written to, and a hostile
+#     path recorded in the store is refused rather than followed.
+#
+# You can run it without installing anything:
+#
+#   npx --yes github:liyixuan201211/dsh-rewind --help
+
+[]

@@ -1,0 +1,62 @@
+{
+  "name": "dsh-rewind",
+  "version": "1.0.0",
+  "description": "Undo what an agent did to a directory: content-addressed snapshots, one-command rewind, and an undo you can undo. Works in any folder — git or not.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "rewind": "./src/cli.js"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "typecheck": "tsc --noEmit",
+    "check": "node --test && tsc --noEmit",
+    "rewind": "node src/cli.js"
+  },
+  "files": [
+    "src",
+    "skills",
+    "cordis.patch.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "ai-agents",
+    "coding-agents",
+    "agent-safety",
+    "undo",
+    "snapshot",
+    "content-addressed",
+    "time-travel",
+    "rollback",
+    "recovery",
+    "developer-tools",
+    "cli"
+  ],
+  "homepage": "https://github.com/liyixuan201211/dsh-rewind",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liyixuan201211/dsh-rewind.git"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "compatibility": {
+      "dsh": ">=0.1.5-rc.1 <0.2.0"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

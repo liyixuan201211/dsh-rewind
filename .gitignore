@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+*.log
+
+# The store holds plaintext copies of every captured file. It must never be
+# committed — it would leak .env contents, and it would grow without bound.
+.rewind/
